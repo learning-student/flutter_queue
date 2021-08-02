@@ -1,0 +1,5 @@
+
+enum TimeoutBehavior{
+  RetryLater,
+  DestroyJob
+}
