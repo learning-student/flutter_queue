@@ -61,7 +61,7 @@ class QueueService {
     /// try to find job handler if not this will throw an exception anyway
     /// and if handler is available we will call handlers on added list
     JobHandler handler = getJobHandler(job);
-    await handler.added(job);
+    await handler.added(job, this);
 
     if(job.startRightAway ){
       return await executeJob(job);
@@ -70,7 +70,7 @@ class QueueService {
     return true;
   }
 
-  /// this will destory job based on the queue jobs' key parameter
+  /// this will destroy job based on the queue jobs' key parameter
   Future<void> destroyJob(QueueJob job) async {
     jobs = jobs.where((element) {
       return element.key != job.key;
@@ -81,11 +81,15 @@ class QueueService {
     /// try to find job handler if not this will throw an exception anyway
     /// and if handler is available we will call handlers on removed from list
     JobHandler handler = getJobHandler(job);
-    await handler.removed(job);
+    await handler.removed(job, this);
 
     return;
   }
 
+
+  /// When we failed on a job we will try to later
+  /// this function mark the job failed and set the lastError property the message
+  /// of the last exception
   Future<void> retryJob(QueueJob job, Exception e) async {
     if (job.retryCount <= job.maxRetries) {
 
@@ -124,7 +128,7 @@ class QueueService {
 
   Future<bool> executeJob(QueueJob job) async {
     JobHandler handler = getJobHandler(job);
-    bool shouldStart = await handler.check(job);
+    bool shouldStart = await handler.check(job, this);
 
     if (shouldStart == false) {
       return false;
@@ -141,7 +145,7 @@ class QueueService {
     }
 
     try {
-      await handler.onStart(job);
+      await handler.onStart(job, this);
     } on Exception catch (e) {
       // there was an error during the execution of onStart, retry later
       await retryJob(job, e);
@@ -149,7 +153,7 @@ class QueueService {
     }
 
     try {
-      await handler.handle(job).timeout(job.timeout);
+      await handler.handle(job, this).timeout(job.timeout);
 
       /// job executed perfectly remove job from the list
       await destroyJob(job);
@@ -176,7 +180,7 @@ class QueueService {
     }
 
     try {
-      await handler.onEnd(job);
+      await handler.onEnd(job, this);
     } catch (e) {}
 
     return true;
