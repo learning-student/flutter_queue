@@ -41,7 +41,9 @@ abstract class JobHandler {
   }
 
   /// this method will be called when job removed from regardless of status of execution
-  Future<void> removed(QueueJob job, QueueService queueService) async {
+  // if failed is true jobs removed after maxRetryCount, this parameter can be used for reinserting job into queue
+  // or save it to somewhere else etc.
+  Future<void> removed(QueueJob job, bool failed, QueueService queueService) async {
     return;
   }
 }

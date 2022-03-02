@@ -71,7 +71,8 @@ class QueueService {
   }
 
   /// this will destroy job based on the queue jobs' key parameter
-  Future<void> destroyJob(QueueJob job) async {
+  // if failed = true, onRemoved will be called with its second as true
+  Future<void> destroyJob(QueueJob job, {bool failed = false}) async {
     jobs = jobs.where((element) {
       return element.key != job.key;
     }).toList();
@@ -81,7 +82,7 @@ class QueueService {
     /// try to find job handler if not this will throw an exception anyway
     /// and if handler is available we will call handlers on removed from list
     JobHandler handler = getJobHandler(job);
-    await handler.removed(job, this);
+    await handler.removed(job, failed, this);
 
     return;
   }
@@ -135,7 +136,7 @@ class QueueService {
     }
 
     if (job.retryCount >= job.maxRetries) {
-      await destroyJob(job);
+      await destroyJob(job, failed: true);
       return false;
     }
 
