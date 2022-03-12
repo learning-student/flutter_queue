@@ -3,14 +3,13 @@ import 'package:flutter_queue/flutter_queue.dart';
 import 'QueueJob.dart';
 
 abstract class JobHandler {
-
   /// the name of the job
   static String jobName = 'queue-job';
 
   /// this method will be called when the execution has started.
   /// if any error is thrown while execution of this function
   /// the execution of handle will be canceled
-  Future<void> onStart(QueueJob job, QueueService queueService) async{
+  Future<void> onStart(QueueJob job, QueueService queueService) async {
     return;
   }
 
@@ -19,7 +18,6 @@ abstract class JobHandler {
   Future<void> onEnd(QueueJob job, QueueService queueService) async {
     return;
   }
-
 
   /// this method will handle the execution
   Future<void> handle(QueueJob job, QueueService queueService);
@@ -40,10 +38,16 @@ abstract class JobHandler {
     return;
   }
 
-  /// this method will be called when job removed from regardless of status of execution
+  /// this method will be called when job removed from job unless when job failed or removed by users then self
   // if failed is true jobs removed after maxRetryCount, this parameter can be used for reinserting job into queue
   // or save it to somewhere else etc.
-  Future<void> removed(QueueJob job, bool failed, QueueService queueService) async {
+  Future<void> removed(
+      QueueJob job, bool failed, QueueService queueService) async {
+    return;
+  }
+
+  /// this method will be called when succeed and removed from the waiting job list
+  Future<void> completed(QueueJob job, QueueService queueService) async {
     return;
   }
 }

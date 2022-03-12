@@ -3,7 +3,6 @@ library flutter_queue;
 import 'dart:async';
 import 'dart:convert';
 
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'JobHandler.dart';
@@ -24,7 +23,7 @@ class QueueService {
 
   QueueService(
       {required SharedPreferences sharedPreferences,
-        this.registeredJobs = emptyJobList}) {
+      this.registeredJobs = emptyJobList}) {
     // initialize jobs from shared_preferences instance
 
     this.sharedPreferences = sharedPreferences;
@@ -63,7 +62,7 @@ class QueueService {
     JobHandler handler = getJobHandler(job);
     await handler.added(job, this);
 
-    if(job.startRightAway ){
+    if (job.startRightAway) {
       return await executeJob(job);
     }
 
@@ -72,7 +71,8 @@ class QueueService {
 
   /// this will destroy job based on the queue jobs' key parameter
   // if failed = true, onRemoved will be called with its second as true
-  Future<void> destroyJob(QueueJob job, {bool failed = false}) async {
+  Future<void> destroyJob(QueueJob job,
+      {bool failed = false, bool completed = false}) async {
     jobs = jobs.where((element) {
       return element.key != job.key;
     }).toList();
@@ -82,18 +82,23 @@ class QueueService {
     /// try to find job handler if not this will throw an exception anyway
     /// and if handler is available we will call handlers on removed from list
     JobHandler handler = getJobHandler(job);
-    await handler.removed(job, failed, this);
+
+    // when we are trying to remove this job because it run successfully
+    // don't call to removed, call the completed
+    if (completed) {
+      await handler.completed(job, this);
+    } else {
+      await handler.removed(job, failed, this);
+    }
 
     return;
   }
-
 
   /// When we failed on a job we will try to later
   /// this function mark the job failed and set the lastError property the message
   /// of the last exception
   Future<void> retryJob(QueueJob job, Exception e) async {
     if (job.retryCount <= job.maxRetries) {
-
       job.lastError = {"message": e.toString()};
 
       await saveJobs();
@@ -140,7 +145,7 @@ class QueueService {
       return false;
     }
 
-    if(job.lastError != null){
+    if (job.lastError != null) {
       job.retryCount += 1;
       await saveJobs();
     }
@@ -157,7 +162,7 @@ class QueueService {
       await handler.handle(job, this).timeout(job.timeout);
 
       /// job executed perfectly remove job from the list
-      await destroyJob(job);
+      await destroyJob(job, completed: true);
     } on TimeoutException catch (t) {
       /// job timed out, now we will determine what will happen to this job based on [timeoutBehavior]
       /// if TimeoutBehavior.RetryLater is selected, we will retry later based on [retryLater] propery
@@ -189,7 +194,7 @@ class QueueService {
 
   Future<void> startJobs(
       {double executeJobs: double.infinity,
-        double timeout: double.infinity}) async {
+      double timeout: double.infinity}) async {
     if (working == true) {
       return;
     }
