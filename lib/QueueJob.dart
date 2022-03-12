@@ -31,6 +31,8 @@ class QueueJob {
   /// maximum time to try if execution is failed
   final int maxRetries;
 
+  // this parameters
+  DateTime? createdAt;
   /// this parameter will mark the job as waiting for retry
   /// as long as this is set to true, this job won't be executed even if [startJobs] is called
   bool waitingForRetry = false;
@@ -52,8 +54,13 @@ class QueueJob {
       this.maxRetries = 3,
       this.lastError,
       this.retryLater = nextRestart,
+        this.createdAt,
       this.timeoutBehavior = TimeoutBehavior.RetryLater}){
     key = UniqueKey().toString();
+    if (this.createdAt == null) {
+      this.createdAt = DateTime.now();
+    }
+
   }
 
   factory QueueJob.fromJson(Map<String, dynamic> json) =>
